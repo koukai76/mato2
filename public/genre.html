@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>まとめ日時</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+      crossorigin="anonymous"
+    />
+
+    <style>
+      .text {
+        font-weight: bold;
+        font-size: 18px;
+        margin: 0;
+        -webkit-text-decoration: none;
+        text-decoration: none;
+      }
+
+      .header {
+        position: fixed;
+        z-index: 999;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background: #eee;
+        box-sizing: border-box;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <a href="/" class="header text">ホーム</a>
+    </div>
+
+    <hr />
+
+    <input type="date" id="d" />
+
+    <hr />
+
+    <div id="app"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment.js"></script>
+
+    <script>
+      const GENRE = {
+        1: 'news',
+        2: 'newsplus',
+        3: 'bizplus',
+        4: 'mnewsplus',
+      };
+
+      const baseurl = location.protocol + '//' + location.host;
+
+      const method = data => {
+        const root = document.getElementById('app');
+        root.innerHTML = '';
+
+        data
+          .sort((aa, bb) => {
+            return new Date(aa.time).getTime() > new Date(bb.time).getTime()
+              ? -1
+              : 1;
+          })
+          .map(m => {
+            const p = document.createElement('p');
+            const a = document.createElement('a');
+            const hr = document.createElement('hr');
+
+            p.textContent = new Date(m.time).toLocaleString({
+              timeZone: 'Asia/Tokyo',
+            });
+            p.style.fontSize = '14px';
+            p.style.margin = '0px';
+            // p.style.whiteSpace = 'pre-wrap';
+
+            a.textContent =
+              m.title +
+              moment(new Date(m.key * 1000)).format('YYYY-MM-DD HH:mm:ss');
+            a.setAttribute('target', '_blank');
+            a.setAttribute('rel', 'noopener noreferrer');
+            a.className = 'text';
+
+            if (m.site === 1) {
+              a.href = `https://shin-5ch.netlify.app/thread.html?q=${m.url}`;
+            } else {
+              a.href = `https://shin-5ch.netlify.app/thread.html?q=${m.url}`;
+            }
+
+            // hr.style.margin = '0px';
+
+            root.appendChild(p);
+            root.appendChild(a);
+            root.appendChild(hr);
+          });
+      };
+
+      const request = async url => {
+        const res = await fetch(url, {
+          method: 'get',
+          headers: {
+            Authorization: 'Bearer abc',
+            'Content-Type': 'application/json',
+          },
+        });
+        return await res.json();
+      };
+
+      document.getElementById('d').addEventListener('change', async e => {
+        const searchParams = new URLSearchParams(window.location.search);
+
+        try {
+          const res = await request(
+            `${baseurl}/api/search?genre=${searchParams.get('q')}&date=${
+              e.target.value
+            }`
+          );
+
+          method(res['data']);
+        } catch (error) {}
+      });
+
+      (async function () {
+        const searchParams = new URLSearchParams(window.location.search);
+        const q = searchParams.get('q');
+
+        try {
+          const res = await request(
+            `${baseurl}/api/search?genre=${q}&date=${moment().format(
+              'YYYY-MM-DD'
+            )}`
+          );
+
+          method(res['data']);
+
+          document.title = document.title + ' | ' + GENRE[q];
+        } catch (error) {}
+      })();
+    </script>
+  </body>
+</html>
